@@ -400,6 +400,10 @@ html:not(.has-intro) .intro { display: none; }
 .hero__eyebrow-line { width: 48px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold)); }
 .hero__eyebrow-line:last-child { background: linear-gradient(270deg, transparent, var(--gold)); }
 
+/* Focus lands here after the intro; no ring around the names */
+.hero__names:focus,
+.hero__names:focus-visible { outline: none; }
+
 .hero__names {
     display: flex;
     flex-direction: column;
