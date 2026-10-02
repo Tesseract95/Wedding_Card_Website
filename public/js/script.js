@@ -20,6 +20,7 @@
        1. Intro
        ------------------------------------------------------------------ */
     var intro = document.getElementById('intro');
+    var weddingSong = document.getElementById('wedding-song');
 
     function finishIntro() {
         html.classList.remove('has-intro');
@@ -35,6 +36,14 @@
 
     function closeIntro() {
         if (!intro || intro.classList.contains('is-done')) { return; }
+        
+        // Play the wedding song when intro is closed
+        if (weddingSong) {
+            weddingSong.play().catch(function(error) {
+                console.log('Audio playback failed:', error);
+            });
+        }
+        
         if (reduceMotion) { finishIntro(); return; }
         intro.classList.add('is-done');
         window.setTimeout(finishIntro, 1200);
