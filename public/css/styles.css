@@ -1,0 +1,1302 @@
+/* ==========================================================================
+   Swastik & Soumya · Wedding Invitation
+   A card, not a website: a closed gatefold that opens onto a stack of
+   framed stationery panels resting on velvet.
+   ========================================================================== */
+
+/* ----- Design tokens ---------------------------------------------------- */
+:root {
+    /* Paper */
+    --paper:        #FBF6EC;
+    --paper-deep:   #F3EAD7;
+    --paper-top:    #FDFAF3;
+
+    /* Ink: warm cocoa, never black */
+    --ink:          #5C3B2E;
+    --ink-soft:     #7D6150;
+
+    /* Wedding maroon */
+    --maroon:       #6B1F2A;
+    --maroon-deep:  #4E121D;
+    --maroon-night: #2B0A10;
+
+    /* Antique gold */
+    --gold:         #B8923E;
+    --gold-light:   #D4AF61;
+    --gold-dark:    #8C6B2E;
+    --gold-line:    rgba(184, 146, 62, 0.55);
+    --gold-line-soft: rgba(184, 146, 62, 0.28);
+    --gold-on-dark: rgba(212, 175, 97, 0.62);
+
+    /* Text on maroon */
+    --cream:        #F3E7CF;
+    --cream-bright: #FBF3E3;
+    --cream-muted:  rgba(243, 231, 207, 0.74);
+
+    /* Type */
+    --font-script: 'Great Vibes', 'Snell Roundhand', 'Brush Script MT', cursive;
+    --font-serif:  'Cormorant Garamond', 'Garamond', 'Times New Roman', serif;
+    --font-caps:   'Cinzel', 'Cormorant Garamond', serif;
+    --font-deva:   'Noto Serif Devanagari', 'Kohinoor Devanagari', 'Devanagari MT', 'Nirmala UI', serif;
+
+    /* Layout */
+    --card-width:   820px;
+    --page-pad:     clamp(1rem, 3vw, 3rem);
+    --panel-gap:    clamp(2rem, 4vw, 3.5rem);
+    --panel-pad-y:  clamp(3rem, 6vw, 5rem);
+    --panel-pad-x:  clamp(1.5rem, 6vw, 4.5rem);
+    --frame-inset:  10px;
+    --corner-size:  72px;
+
+    /* Shared textures */
+    --lattice: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cpath d='M32 3 L61 32 L32 61 L3 32 Z' fill='none' stroke='%23D4AF61' stroke-opacity='0.07'/%3E%3Ccircle cx='32' cy='32' r='1.1' fill='%23D4AF61' fill-opacity='0.14'/%3E%3C/svg%3E");
+    --corner-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 74 C1 34 34 1 74 1'/%3E%3Cpath d='M1 58 C1 27 27 1 58 1' stroke-opacity='0.55'/%3E%3Cpath d='M16 16 C28 8 44 14 42 28 C40 38 28 40 24 32 C21 26 28 21 32 26'/%3E%3Ccircle cx='46' cy='46' r='2.2' fill='%23000' stroke='none'/%3E%3Cpath d='M74 1 C80 3 85 8 88 15 C81 13 76 8 74 1 Z' fill='%23000' stroke='none'/%3E%3Cpath d='M1 74 C3 80 8 85 15 88 C13 81 8 76 1 74 Z' fill='%23000' stroke='none'/%3E%3C/svg%3E");
+}
+
+/* ----- Reset & base ------------------------------------------------------ */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: 112.5%;              /* 18px: Cormorant runs small */
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    line-height: 1.65;
+    color: var(--ink);
+    min-height: 100vh;
+    padding: var(--page-pad) 0 calc(var(--page-pad) * 1.25);
+    background-color: var(--maroon-night);
+    background-image:
+        radial-gradient(ellipse 90% 45% at 50% 0%, rgba(184, 146, 62, 0.16), transparent 70%),
+        radial-gradient(ellipse 70% 40% at 50% 100%, rgba(184, 146, 62, 0.08), transparent 70%),
+        var(--lattice);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+}
+
+/* While the card is closed the page behind the doors must not scroll */
+html.card-closed,
+html.card-closed body {
+    overflow: hidden;
+    height: 100%;
+}
+
+img,
+svg {
+    display: block;
+    max-width: 100%;
+}
+
+p {
+    margin: 0;
+}
+
+h1, h2, h3 {
+    font-weight: 400;
+    margin: 0;
+}
+
+/* ==========================================================================
+   THE CLOSED CARD: two doors meeting at a wax seal
+   ========================================================================== */
+.gate {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    perspective: 1700px;
+    perspective-origin: 50% 50%;
+    touch-action: none;
+}
+
+html.card-closed .gate {
+    display: block;
+}
+
+.gate__leaf {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-bottom: 24vh;
+    background-color: var(--maroon-deep);
+    background-image:
+        radial-gradient(ellipse 120% 50% at 50% 0%, rgba(212, 175, 97, 0.18), transparent 70%),
+        linear-gradient(170deg, #6E1C2B 0%, var(--maroon-deep) 55%, #3A0C15 100%);
+    border: 1px solid var(--gold-on-dark);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    will-change: transform;
+    transition:
+        transform 1.7s cubic-bezier(0.72, 0, 0.28, 1) 0.12s,
+        opacity 0.6s ease 1.15s;
+}
+
+.gate__leaf::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: var(--lattice);
+    opacity: 0.9;
+    pointer-events: none;
+}
+
+.gate__leaf--left {
+    left: 0;
+    align-items: flex-end;
+    text-align: right;
+    padding-right: clamp(1rem, 3.5vw, 2.5rem);
+    border-right: 0;
+    transform-origin: left center;
+    box-shadow: inset -48px 0 56px -44px rgba(0, 0, 0, 0.55);
+}
+
+.gate__leaf--right {
+    right: 0;
+    align-items: flex-start;
+    text-align: left;
+    padding-left: clamp(1rem, 3.5vw, 2.5rem);
+    border-left: 0;
+    transform-origin: right center;
+    box-shadow: inset 48px 0 56px -44px rgba(0, 0, 0, 0.55);
+}
+
+/* Inner rule runs around the closed card, not along the seam */
+.gate__leaf::before {
+    content: '';
+    position: absolute;
+    inset: var(--frame-inset);
+    border: 1px solid var(--gold-on-dark);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.gate__leaf--left::before  { right: 0; border-right: 0; }
+.gate__leaf--right::before { left: 0;  border-left: 0; }
+
+.gate__leaf .frame {
+    z-index: 1;
+}
+
+.gate__leaf--left .frame  { right: 0; }
+.gate__leaf--right .frame { left: 0; }
+
+.gate__leaf .corner {
+    background-color: var(--gold-light);
+}
+
+.gate__leaf-content {
+    position: relative;
+    z-index: 1;
+}
+
+.gate__eyebrow {
+    font-family: var(--font-caps);
+    font-size: 0.74rem;
+    letter-spacing: 0.38em;
+    text-transform: uppercase;
+    color: var(--gold-light);
+    margin-bottom: 0.5rem;
+}
+
+.gate__leaf--left .gate__eyebrow {
+    margin-right: -0.38em;      /* absorb trailing letter-space against the seam */
+}
+
+.gate__name {
+    font-family: var(--font-script);
+    font-size: clamp(3rem, 9.5vw, 6rem);
+    line-height: 1.1;
+    color: var(--cream-bright);
+    text-shadow: 0 2px 30px rgba(0, 0, 0, 0.32);
+    padding: 0 0.1em;
+}
+
+/* The seal */
+.gate__open {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translateX(-50%);
+    margin-top: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem;
+    background: none;
+    border: 0;
+    color: var(--gold-light);
+    font: inherit;
+    cursor: pointer;
+    z-index: 2;
+    -webkit-tap-highlight-color: transparent;
+    transition: opacity 0.45s ease, transform 0.45s ease;
+}
+
+.gate__open:focus-visible {
+    outline: 1px solid var(--gold-light);
+    outline-offset: 8px;
+}
+
+.gate__seal {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 92px;
+    height: 92px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 36% 30%, #E6CB84 0%, var(--gold) 52%, var(--gold-dark) 100%);
+    box-shadow:
+        0 14px 34px rgba(0, 0, 0, 0.5),
+        inset 0 0 0 4px rgba(78, 18, 29, 0.92),
+        inset 0 0 0 5px rgba(230, 203, 132, 0.75),
+        inset 0 2px 8px rgba(255, 255, 255, 0.28);
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.gate__seal::after {
+    content: '';
+    position: absolute;
+    inset: 10px;
+    border-radius: 50%;
+    border: 1px solid rgba(78, 18, 29, 0.45);
+}
+
+.gate__seal-amp {
+    font-family: var(--font-script);
+    font-size: 3rem;
+    line-height: 1;
+    color: var(--maroon-deep);
+    transform: translateY(-3px);
+}
+
+.gate__open:hover .gate__seal,
+.gate__open:focus-visible .gate__seal {
+    transform: scale(1.05);
+    box-shadow:
+        0 18px 40px rgba(0, 0, 0, 0.55),
+        0 0 0 10px rgba(212, 175, 97, 0.12),
+        inset 0 0 0 4px rgba(78, 18, 29, 0.92),
+        inset 0 0 0 5px rgba(230, 203, 132, 0.85),
+        inset 0 2px 8px rgba(255, 255, 255, 0.32);
+}
+
+.gate__open-label {
+    font-family: var(--font-caps);
+    font-size: 0.72rem;
+    letter-spacing: 0.36em;
+    text-transform: uppercase;
+    padding-left: 0.36em;
+}
+
+/* Opening */
+.gate.is-opening .gate__leaf--left {
+    transform: rotateY(-108deg);
+    opacity: 0;
+}
+
+.gate.is-opening .gate__leaf--right {
+    transform: rotateY(108deg);
+    opacity: 0;
+}
+
+.gate.is-opening .gate__open {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.6);
+    pointer-events: none;
+}
+
+/* The first page waits behind the doors, then rises as they open */
+html.card-closed:not(.card-opening) .panel--cover {
+    animation-play-state: paused;
+}
+
+/* ==========================================================================
+   THE CARD: a vertical stack of panels
+   ========================================================================== */
+.card {
+    width: min(var(--card-width), calc(100% - 2 * var(--page-pad)));
+    margin: 0 auto;
+    display: grid;
+    gap: var(--panel-gap);
+}
+
+.panel {
+    position: relative;
+    padding: var(--panel-pad-y) var(--panel-pad-x);
+    text-align: center;
+    background:
+        linear-gradient(180deg, var(--paper-top) 0%, var(--paper) 45%, var(--paper-deep) 100%);
+    border: 1px solid var(--gold-line);
+    box-shadow:
+        0 40px 70px -40px rgba(0, 0, 0, 0.75),
+        0 0 0 1px rgba(0, 0, 0, 0.18);
+    scroll-margin-top: var(--page-pad);
+}
+
+/* Inner rule: the second line of the classic double-rule frame */
+.panel::before {
+    content: '';
+    position: absolute;
+    inset: var(--frame-inset);
+    border: 1px solid var(--gold-line);
+    pointer-events: none;
+}
+
+/* A small gold lozenge floats in the gap between panels */
+.panel + .panel::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: calc(var(--panel-gap) / -2);
+    width: 9px;
+    height: 9px;
+    transform: translate(-50%, -50%) rotate(45deg);
+    border: 1px solid var(--gold-on-dark);
+    background: var(--maroon-night);
+}
+
+/* ----- Corner flourishes -------------------------------------------------- */
+.frame {
+    position: absolute;
+    inset: var(--frame-inset);
+    pointer-events: none;
+}
+
+.corner {
+    position: absolute;
+    width: var(--corner-size);
+    height: var(--corner-size);
+    background-color: var(--gold);
+    -webkit-mask: var(--corner-mask) no-repeat center / contain;
+    mask: var(--corner-mask) no-repeat center / contain;
+}
+
+.corner--tl { top: -1px;    left: -1px; }
+.corner--tr { top: -1px;    right: -1px; transform: rotate(90deg); }
+.corner--br { bottom: -1px; right: -1px; transform: rotate(180deg); }
+.corner--bl { bottom: -1px; left: -1px;  transform: rotate(270deg); }
+
+/* ----- Shared ornaments & labels ---------------------------------------- */
+.ornament {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.9rem;
+    width: min(100%, 300px);
+    margin: 1.75rem auto;
+    color: var(--gold);
+}
+
+.ornament::before,
+.ornament::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, transparent, currentColor);
+}
+
+.ornament::after {
+    background: linear-gradient(to left, transparent, currentColor);
+}
+
+.ornament svg {
+    width: 44px;
+    height: 22px;
+    flex: none;
+}
+
+.ornament--light {
+    color: var(--gold-light);
+}
+
+.eyebrow {
+    font-family: var(--font-caps);
+    font-size: 0.78rem;
+    letter-spacing: 0.42em;
+    text-transform: uppercase;
+    color: var(--gold-light);
+    padding-left: 0.42em;         /* optically re-centre trailing letter-space */
+    margin-bottom: 1rem;
+}
+
+/* ==========================================================================
+   FRONT PAGE (maroon)
+   ========================================================================== */
+.panel--cover {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 2 * var(--page-pad));
+    min-height: calc(100svh - 2 * var(--page-pad));
+    color: var(--cream);
+    background:
+        radial-gradient(ellipse 75% 45% at 50% 0%, rgba(212, 175, 97, 0.22), transparent 70%),
+        radial-gradient(ellipse 60% 35% at 50% 100%, rgba(0, 0, 0, 0.35), transparent 70%),
+        linear-gradient(170deg, #6E1C2B 0%, var(--maroon-deep) 55%, #3A0C15 100%);
+    border-color: var(--gold-on-dark);
+    animation: rise 1.3s ease-out both;
+}
+
+.panel--cover::before {
+    border-color: var(--gold-on-dark);
+}
+
+.panel--cover .corner {
+    background-color: var(--gold-light);
+}
+
+@keyframes rise {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: none; }
+}
+
+.invocation {
+    font-family: var(--font-deva);
+    font-size: 1rem;
+    letter-spacing: 0.08em;
+    color: var(--gold-light);
+    margin-bottom: 1.6rem;
+}
+
+/* Ganesha medallion */
+.deity {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 132px;
+    height: 132px;
+    margin: 0 auto 1.6rem;
+    border-radius: 50%;
+    border: 1px solid rgba(212, 175, 97, 0.7);
+}
+
+.deity::before {
+    content: '';
+    position: absolute;
+    inset: 5px;
+    border-radius: 50%;
+    border: 1px solid rgba(212, 175, 97, 0.32);
+}
+
+.deity__art {
+    width: 96px;
+    height: auto;
+    color: var(--gold-light);
+    filter: drop-shadow(0 0 14px rgba(212, 175, 97, 0.38));
+}
+
+.deity__image {
+    display: none;
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 18px rgba(212, 175, 97, 0.45));
+}
+
+.deity.has-image .deity__image { display: block; }
+.deity.has-image .deity__art   { display: none; }
+
+.shloka {
+    font-family: var(--font-deva);
+    font-size: 1.05rem;
+    line-height: 1.95;
+    color: var(--cream);
+}
+
+.shloka-translit {
+    margin-top: 0.6rem;
+    font-style: italic;
+    font-size: 0.98rem;
+    line-height: 1.6;
+    color: var(--cream-muted);
+}
+
+.panel--cover .ornament {
+    margin: 2rem auto;
+}
+
+/* Couple's names */
+.names {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: var(--font-script);
+    font-weight: 400;
+    line-height: 1.25;
+    margin-bottom: 2.25rem;
+}
+
+.names__name {
+    font-size: clamp(3rem, 8.5vw, 4.75rem);
+    color: var(--cream-bright);
+    text-shadow: 0 2px 28px rgba(0, 0, 0, 0.28);
+}
+
+.names__amp {
+    font-size: clamp(2rem, 5vw, 2.9rem);
+    line-height: 1;
+    color: var(--gold-light);
+    margin: 0.1em 0;
+}
+
+/* Date block: Monday | 30 November 2026 | 11:55 PM */
+.date-block {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    width: min(100%, 560px);
+    margin: 0 auto;
+}
+
+.date-block__side {
+    font-family: var(--font-caps);
+    font-size: clamp(0.8rem, 2vw, 1rem);
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--cream);
+    padding: 0 0.5rem 0 calc(0.5rem + 0.28em);
+}
+
+.date-block__center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+    padding: 0.25rem clamp(1rem, 4vw, 2rem);
+    border-left: 1px solid var(--gold-on-dark);
+    border-right: 1px solid var(--gold-on-dark);
+}
+
+.date-block__month,
+.date-block__year {
+    font-family: var(--font-caps);
+    font-size: 0.8rem;
+    letter-spacing: 0.38em;
+    text-transform: uppercase;
+    color: var(--gold-light);
+    padding-left: 0.38em;
+}
+
+.date-block__day {
+    font-family: var(--font-caps);
+    font-size: clamp(3rem, 9vw, 4.25rem);
+    line-height: 0.95;
+    color: var(--cream-bright);
+    margin: 0.4rem 0;
+}
+
+/* Same block, re-coloured for cream paper (used by the reception) */
+.date-block--paper .date-block__side {
+    color: var(--maroon);
+}
+
+.date-block--paper .date-block__center {
+    border-color: var(--gold-line);
+}
+
+.date-block--paper .date-block__month,
+.date-block--paper .date-block__year {
+    color: var(--gold-dark);
+}
+
+.date-block--paper .date-block__day {
+    font-size: clamp(2.6rem, 8vw, 3.6rem);
+    color: var(--maroon);
+}
+
+.cover-venue {
+    margin-top: 1.5rem;
+    font-style: italic;
+    font-size: 1.08rem;
+    color: var(--cream-muted);
+}
+
+/* ==========================================================================
+   INNER PANELS: shared header
+   ========================================================================== */
+.panel__header {
+    margin-bottom: 2.25rem;
+}
+
+.panel__title {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: clamp(1.45rem, 3.5vw, 1.9rem);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--maroon);
+    padding-left: 0.3em;
+    line-height: 1.3;
+}
+
+.panel__header .ornament {
+    margin: 1.1rem auto 0;
+}
+
+.panel__subtitle {
+    margin: 1.5rem auto 0;
+    max-width: 38ch;
+    font-style: italic;
+    font-size: 1.12rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+}
+
+/* ==========================================================================
+   THE INVITATION
+   ========================================================================== */
+.formal {
+    max-width: 42ch;
+    margin: 0 auto;
+    font-size: 1.18rem;
+    line-height: 1.75;
+    color: var(--ink);
+}
+
+.formal__greeting {
+    font-family: var(--font-script);
+    font-size: 2.1rem;
+    line-height: 1.2;
+    color: var(--gold-dark);
+    margin-bottom: 0.6rem;
+}
+
+.couple {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: start;
+    gap: clamp(1rem, 3vw, 2rem);
+    margin-top: 3rem;
+}
+
+.person {
+    text-align: center;
+}
+
+.person__label {
+    font-family: var(--font-caps);
+    font-size: 0.72rem;
+    letter-spacing: 0.42em;
+    text-transform: uppercase;
+    color: var(--gold-dark);
+    padding-left: 0.42em;
+    margin-bottom: 0.75rem;
+}
+
+.person__name {
+    font-family: var(--font-script);
+    font-size: clamp(2.5rem, 5.2vw, 3.1rem);
+    line-height: 1.2;
+    color: var(--maroon);
+}
+
+.person__nick {
+    margin: 0.1rem 0 1.4rem;
+    font-style: italic;
+    font-size: 1.08rem;
+    color: var(--ink-soft);
+}
+
+.person__relation {
+    position: relative;
+    padding-top: 1.2rem;
+    font-style: italic;
+    font-size: 1.02rem;
+    color: var(--ink-soft);
+}
+
+.person__relation::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 44px;
+    height: 1px;
+    transform: translateX(-50%);
+    background: var(--gold-line);
+}
+
+.person__parents {
+    margin: 0.35rem 0 0.7rem;
+    font-weight: 600;
+    font-size: 1.18rem;
+    line-height: 1.5;
+    color: var(--maroon);
+}
+
+.person__place {
+    font-family: var(--font-caps);
+    font-size: 0.72rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gold-dark);
+    padding-left: 0.3em;
+}
+
+.couple__weds {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    align-self: center;
+    font-family: var(--font-script);
+    font-size: clamp(1.9rem, 4vw, 2.5rem);
+    line-height: 1;
+    color: var(--gold);
+    padding: 0 0.25rem;
+}
+
+.couple__weds::before,
+.couple__weds::after {
+    content: '';
+    width: 1px;
+    height: 3rem;
+    background: linear-gradient(to bottom, transparent, var(--gold-line), transparent);
+}
+
+/* ==========================================================================
+   WEDDING CELEBRATIONS: the programme
+   ========================================================================== */
+.programme {
+    list-style: none;
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: left;
+}
+
+.programme__item {
+    display: grid;
+    grid-template-columns: 76px 1fr;
+    gap: 1.5rem;
+    padding: 1.6rem 0;
+    border-top: 1px solid var(--gold-line-soft);
+}
+
+.programme__item:last-child {
+    border-bottom: 1px solid var(--gold-line-soft);
+}
+
+.programme__date {
+    text-align: center;
+    font-family: var(--font-caps);
+    line-height: 1;
+    color: var(--maroon);
+    padding-top: 0.15rem;
+}
+
+.programme__day {
+    display: block;
+    font-size: 2.15rem;
+}
+
+.programme__month {
+    display: block;
+    margin-top: 0.4rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--gold-dark);
+    padding-left: 0.32em;
+}
+
+.programme__title {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    font-size: 1.38rem;
+    line-height: 1.3;
+    color: var(--maroon);
+}
+
+.programme__when {
+    margin: 0.45rem 0 0.5rem;
+    font-family: var(--font-caps);
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gold-dark);
+}
+
+.programme__desc {
+    font-size: 1.06rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+}
+
+/* The wedding day itself: quietly emphasised */
+.programme__item--main {
+    margin: 0 calc(var(--panel-pad-x) * -0.35);
+    padding: 1.9rem calc(var(--panel-pad-x) * 0.35);
+    background: linear-gradient(90deg, rgba(107, 31, 42, 0.07), rgba(107, 31, 42, 0.02) 70%, transparent);
+    border-top-color: rgba(107, 31, 42, 0.25);
+}
+
+.programme__item--main + .programme__item {
+    border-top-color: rgba(107, 31, 42, 0.25);
+}
+
+.programme__item--main .programme__title {
+    font-size: 1.55rem;
+}
+
+.programme__rituals {
+    display: grid;
+    gap: 0.55rem;
+    margin-top: 1rem;
+}
+
+.programme__rituals div {
+    display: flex;
+    align-items: baseline;
+    gap: 0.9rem;
+}
+
+.programme__rituals dt {
+    flex: none;
+    min-width: 8.6rem;
+    font-family: var(--font-caps);
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold-dark);
+}
+
+.programme__rituals dd {
+    font-size: 1.18rem;
+    font-weight: 500;
+    color: var(--ink);
+}
+
+/* ==========================================================================
+   VENUES (wedding & reception)
+   ========================================================================== */
+.venue {
+    max-width: 48ch;
+    margin: 0 auto;
+}
+
+.venue__icon {
+    width: 34px;
+    height: 34px;
+    margin: 0 auto 1.1rem;
+    color: var(--gold);
+}
+
+.venue__date {
+    font-family: var(--font-caps);
+    font-size: 0.72rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--gold-dark);
+    padding-left: 0.28em;
+    margin-bottom: 0.9rem;
+}
+
+.venue__name {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    font-size: clamp(1.5rem, 3.5vw, 1.95rem);
+    line-height: 1.25;
+    color: var(--maroon);
+    margin-bottom: 0.75rem;
+}
+
+.venue__address {
+    font-size: 1.18rem;
+    line-height: 1.7;
+    color: var(--ink-soft);
+    margin-bottom: 1.9rem;
+}
+
+.reception__note {
+    margin: 1.4rem auto 2.4rem;
+    font-style: italic;
+    font-size: 1.15rem;
+    color: var(--ink-soft);
+}
+
+.button {
+    position: relative;
+    display: inline-block;
+    padding: 0.95rem 2.1rem 0.95rem calc(2.1rem + 0.3em);
+    font-family: var(--font-caps);
+    font-size: 0.74rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--maroon);
+    text-decoration: none;
+    border: 1px solid var(--gold);
+    background: transparent;
+    transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.button::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border: 1px solid var(--gold-line);
+    pointer-events: none;
+    transition: border-color 0.3s ease;
+}
+
+.button:hover,
+.button:focus-visible {
+    background: var(--maroon);
+    color: var(--cream-bright);
+    border-color: var(--maroon);
+    outline: none;
+}
+
+.button:hover::before,
+.button:focus-visible::before {
+    border-color: rgba(212, 175, 97, 0.6);
+}
+
+/* ==========================================================================
+   WITH REGARDS
+   ========================================================================== */
+.regards__script {
+    font-family: var(--font-script);
+    font-size: clamp(2.1rem, 5vw, 2.7rem);
+    line-height: 1.2;
+    color: var(--gold-dark);
+    margin-bottom: 1.1rem;
+}
+
+.regards__names {
+    font-weight: 600;
+    font-size: 1.32rem;
+    line-height: 1.5;
+    color: var(--maroon);
+}
+
+.regards__names + .regards__names {
+    margin-top: 0.6rem;
+}
+
+.regards__nick {
+    font-weight: 400;
+    font-style: italic;
+    font-size: 1.1rem;
+    color: var(--ink-soft);
+}
+
+.regards__family {
+    margin-top: 0.45rem;
+    font-style: italic;
+    font-size: 1.1rem;
+    color: var(--ink-soft);
+}
+
+.panel--regards .ornament {
+    margin: 2rem auto 1.6rem;
+}
+
+/* RSVP: tappable phone numbers */
+.rsvp__title {
+    font-family: var(--font-caps);
+    font-size: 0.8rem;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: var(--gold-dark);
+    padding-left: 0.5em;
+    margin-bottom: 1.3rem;
+}
+
+.rsvp__contacts {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.25rem 3.5rem;
+}
+
+.rsvp__contact {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    color: inherit;
+}
+
+.rsvp__contact:focus-visible {
+    outline: 1px solid var(--gold);
+    outline-offset: 4px;
+}
+
+.rsvp__name {
+    font-weight: 600;
+    font-size: 1.14rem;
+    line-height: 1.3;
+    color: var(--maroon);
+}
+
+.rsvp__number {
+    font-family: var(--font-caps);
+    font-size: 0.88rem;
+    letter-spacing: 0.14em;
+    color: var(--gold-dark);
+    padding-bottom: 0.2rem;
+    border-bottom: 1px solid var(--gold-line-soft);
+    transition: color 0.3s ease, border-color 0.3s ease;
+}
+
+.rsvp__contact:hover .rsvp__number,
+.rsvp__contact:focus-visible .rsvp__number {
+    color: var(--maroon);
+    border-color: var(--maroon);
+}
+
+/* ==========================================================================
+   COLOPHON (below the card)
+   ========================================================================== */
+.colophon {
+    text-align: center;
+    padding: calc(var(--panel-gap) * 0.9) 1rem 0;
+    color: var(--gold-on-dark);
+}
+
+.colophon__names {
+    font-family: var(--font-script);
+    font-size: 1.95rem;
+    line-height: 1.2;
+    color: var(--gold-light);
+}
+
+.colophon__date {
+    margin-top: 0.3rem;
+    font-family: var(--font-caps);
+    font-size: 0.72rem;
+    letter-spacing: 0.42em;
+    padding-left: 0.42em;
+}
+
+/* ==========================================================================
+   MOTION: panels rise gently into view
+   ========================================================================== */
+.js .panel:not(.panel--cover) {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.9s ease, transform 0.9s ease;
+}
+
+.js .panel.is-visible {
+    opacity: 1;
+    transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation: none !important;
+        transition: none !important;
+    }
+
+    .js .panel {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* ==========================================================================
+   RESPONSIVE
+   ========================================================================== */
+@media (max-width: 720px) {
+    .couple {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .couple__weds {
+        flex-direction: row;
+        gap: 1.1rem;
+        padding: 0.25rem 0;
+    }
+
+    .couple__weds::before,
+    .couple__weds::after {
+        width: 3.5rem;
+        height: 1px;
+        background: linear-gradient(to right, transparent, var(--gold-line));
+    }
+
+    .couple__weds::after {
+        background: linear-gradient(to left, transparent, var(--gold-line));
+    }
+}
+
+@media (max-width: 560px) {
+    :root {
+        --corner-size: 56px;
+        --frame-inset: 8px;
+    }
+
+    html {
+        font-size: 106.25%;          /* 17px */
+    }
+
+    /* Closed card */
+    .gate__leaf {
+        padding-bottom: 26vh;
+    }
+
+    .gate__eyebrow {
+        font-size: 0.62rem;
+        letter-spacing: 0.26em;
+    }
+
+    .gate__leaf--left .gate__eyebrow {
+        margin-right: -0.26em;
+    }
+
+    .gate__seal {
+        width: 80px;
+        height: 80px;
+    }
+
+    .gate__seal-amp {
+        font-size: 2.6rem;
+    }
+
+    .gate__open-label {
+        font-size: 0.66rem;
+        letter-spacing: 0.3em;
+    }
+
+    /* Front page */
+    .invocation {
+        font-size: 0.92rem;
+        letter-spacing: 0.04em;
+    }
+
+    .deity {
+        width: 116px;
+        height: 116px;
+    }
+
+    .deity__art {
+        width: 84px;
+    }
+
+    .shloka {
+        font-size: 0.98rem;
+    }
+
+    .panel--cover .ornament {
+        margin: 1.5rem auto;
+    }
+
+    .names {
+        margin-bottom: 1.75rem;
+    }
+
+    .date-block__side {
+        letter-spacing: 0.18em;
+        padding-left: calc(0.5rem + 0.18em);
+    }
+
+    .date-block__month,
+    .date-block__year {
+        letter-spacing: 0.28em;
+        padding-left: 0.28em;
+    }
+
+    /* Programme */
+    .programme__item {
+        grid-template-columns: 60px 1fr;
+        gap: 1.1rem;
+    }
+
+    .programme__day {
+        font-size: 1.85rem;
+    }
+
+    .programme__rituals div {
+        flex-direction: column;
+        gap: 0.15rem;
+    }
+
+    /* Closing page */
+    .regards__script {
+        font-size: 1.9rem;
+    }
+
+    .rsvp__contacts {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
+
+/* ==========================================================================
+   PRINT: the card on paper
+   ========================================================================== */
+@media print {
+    html {
+        font-size: 100%;
+    }
+
+    html.card-closed,
+    html.card-closed body {
+        overflow: visible;
+        height: auto;
+    }
+
+    body {
+        background: #fff;
+        padding: 0;
+    }
+
+    .gate {
+        display: none !important;
+    }
+
+    .card {
+        width: 100%;
+        gap: 1rem;
+    }
+
+    .panel {
+        box-shadow: none;
+        break-inside: avoid;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        animation: none !important;
+    }
+
+    .panel--cover {
+        min-height: auto;
+    }
+
+    .panel + .panel::after,
+    .button,
+    .colophon {
+        display: none;
+    }
+
+    .js .panel {
+        opacity: 1 !important;
+        transform: none !important;
+    }
+}
