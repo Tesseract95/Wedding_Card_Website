@@ -1,0 +1,11 @@
+# Netlify is a static host: it never runs server.js (Express).
+# The site is plain HTML/CSS/JS, so just publish the public/ folder as-is.
+[build]
+  publish = "public"
+  command = ""
+
+# Serve index.html for any unknown path (e.g. /venue) instead of a 404.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
