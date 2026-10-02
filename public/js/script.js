@@ -110,27 +110,32 @@
     /* ------------------------------------------------------------------
        4. Marigold petals
        ------------------------------------------------------------------ */
-    var petalField = document.getElementById('petals');
+    var petalFields = document.querySelectorAll('.petals');
 
-    if (petalField && !reduceMotion) {
+    if (petalFields.length && !reduceMotion) {
         var colours = ['#FF9933', '#FFB85C', '#FFC857', '#FF7E1F', '#FFD08A'];
-        var count = window.innerWidth < 600 ? 14 : 24;
         var rand = function (min, max) { return min + Math.random() * (max - min); };
+        var small = window.innerWidth < 600;
 
-        for (var i = 0; i < count; i++) {
-            var petal = document.createElement('span');
-            petal.className = 'petal';
-            petal.style.left = rand(-2, 100) + '%';
-            petal.style.setProperty('--size', rand(12, 26).toFixed(0) + 'px');
-            petal.style.setProperty('--dur', rand(10, 20).toFixed(1) + 's');
-            petal.style.setProperty('--delay', (-rand(0, 20)).toFixed(1) + 's');
-            petal.style.setProperty('--drift', rand(-120, 120).toFixed(0) + 'px');
-            petal.style.setProperty('--spin', rand(180, 720).toFixed(0) + 'deg');
-            petal.style.setProperty('--sway', rand(2.6, 4.6).toFixed(1) + 's');
-            petal.style.setProperty('--petal-color', colours[i % colours.length]);
-            petal.innerHTML = '<svg aria-hidden="true"><use href="#petal"/></svg>';
-            petalField.appendChild(petal);
-        }
+        Array.prototype.forEach.call(petalFields, function (field) {
+            var count = parseInt(field.getAttribute('data-petals'), 10) || 20;
+            if (small) { count = Math.ceil(count * 0.6); }
+
+            for (var i = 0; i < count; i++) {
+                var petal = document.createElement('span');
+                petal.className = 'petal';
+                petal.style.left = rand(-2, 100) + '%';
+                petal.style.setProperty('--size', rand(12, 26).toFixed(0) + 'px');
+                petal.style.setProperty('--dur', rand(10, 20).toFixed(1) + 's');
+                petal.style.setProperty('--delay', (-rand(0, 20)).toFixed(1) + 's');
+                petal.style.setProperty('--drift', rand(-120, 120).toFixed(0) + 'px');
+                petal.style.setProperty('--spin', rand(180, 720).toFixed(0) + 'deg');
+                petal.style.setProperty('--sway', rand(2.6, 4.6).toFixed(1) + 's');
+                petal.style.setProperty('--petal-color', colours[i % colours.length]);
+                petal.innerHTML = '<svg aria-hidden="true"><use href="#petal"/></svg>';
+                field.appendChild(petal);
+            }
+        });
     }
 
     /* ------------------------------------------------------------------
@@ -208,15 +213,17 @@
     }
 
     /* ------------------------------------------------------------------
-       7. Optional Ganesha image (public/images/ganesha.png)
+       7. Optional images: public/images/ganesha.png, groom.png, bride.png
+          replace the line-art when present.
        ------------------------------------------------------------------ */
-    var deity = document.querySelector('.deity');
-    var image = deity ? deity.querySelector('.deity__image') : null;
+    var artFigures = document.querySelectorAll('.deity, [data-art]');
 
-    if (image) {
-        var showImage = function () {
-            if (image.naturalWidth > 0) { deity.classList.add('has-image'); }
+    Array.prototype.forEach.call(artFigures, function (figure) {
+        var img = figure.querySelector('img');
+        if (!img) { return; }
+        var show = function () {
+            if (img.naturalWidth > 0) { figure.classList.add('has-image'); }
         };
-        if (image.complete) { showImage(); } else { image.addEventListener('load', showImage); }
-    }
+        if (img.complete) { show(); } else { img.addEventListener('load', show); }
+    });
 })();
