@@ -5,7 +5,8 @@
    4. Falling marigold petals in the hero.
    5. Live countdown to the wedding.
    6. "Save the Date" downloads a calendar (.ics) file.
-   7. A Ganesha photograph replaces the line-art if one has been added. */
+   7. A Ganesha photograph replaces the line-art if one has been added.
+   8. A golden trail follows the scroll down the celebrations timeline. */
 
 (function () {
     'use strict';
@@ -235,4 +236,207 @@
         };
         if (img.complete) { show(); } else { img.addEventListener('load', show); }
     });
+    /* ------------------------------------------------------------------
+       8. Golden timeline trail
+          A fine light travels the timeline line in step with the scroll.
+          When it reaches an event, that date badge brightens and two thin
+          rings expand from it. Scrolling back up retraces the line, and an
+          event can be reached again. Nothing runs until the visitor scrolls.
+       ------------------------------------------------------------------ */
+    var timeline = document.querySelector('.timeline');
+
+    if (timeline && window.requestAnimationFrame) {
+        (function () {
+            var items = Array.prototype.slice.call(timeline.querySelectorAll('.timeline__item'));
+            var canSpark = !reduceMotion && typeof timeline.animate === 'function';
+            var READ_LINE = 0.6;      // the trail meets the page 60% of the way down the screen
+            var UNLIGHT_GAP = 24;     // scroll back this far before an event can be reached again
+            var SPARK_POOL = 16;
+
+            var trailEl, headEl, ro;
+            var sparks = [], marks = [];
+            var height = 0, topAbs = 0;
+            var current = 0, goal = 0, silent = true;
+            var rafId = 0, syncId = 0, lastSpark = 0, sparkIdx = 0;
+            var running = false;
+
+            function clamp(n, lo, hi) { return Math.min(hi, Math.max(lo, n)); }
+
+            function build() {
+                trailEl = document.createElement('div');
+                trailEl.className = 'timeline__trail';
+                trailEl.setAttribute('aria-hidden', 'true');
+
+                var glow = document.createElement('span');
+                glow.className = 'timeline__trail-glow';
+                headEl = document.createElement('span');
+                headEl.className = 'timeline__trail-head is-hidden';
+                trailEl.appendChild(glow);
+                trailEl.appendChild(headEl);
+
+                sparks = [];
+                if (canSpark) {
+                    for (var i = 0; i < SPARK_POOL; i++) {
+                        var spark = document.createElement('span');
+                        spark.className = 'timeline__spark';
+                        trailEl.appendChild(spark);
+                        sparks.push(spark);
+                    }
+                }
+                // First child, so event cards paint over the trail just as they do over the line
+                timeline.insertBefore(trailEl, timeline.firstChild);
+            }
+
+            // Positions come from layout offsets, so scroll-reveal transforms never skew them.
+            function measure() {
+                topAbs = timeline.getBoundingClientRect().top + window.pageYOffset;
+                height = timeline.offsetHeight;
+                marks = items.map(function (item) {
+                    var badge = item.querySelector('.timeline__date');
+                    return {
+                        item: item,
+                        y: badge ? item.offsetTop + badge.offsetTop + badge.offsetHeight / 2 : 0,
+                        lit: false,
+                        busy: false,
+                        pending: false,
+                        timer: 0
+                    };
+                });
+            }
+
+            function target() {
+                return clamp(window.pageYOffset + window.innerHeight * READ_LINE - topAbs, 0, height);
+            }
+
+            function arrive(mark, delay) {
+                if (reduceMotion) { return; }
+                // A ring that is still expanding is never cut short; a second
+                // arrival (e.g. after a change of direction) waits for it to finish.
+                if (mark.busy) { mark.pending = true; return; }
+                mark.busy = true;
+                mark.item.style.setProperty('--arrive-delay', delay.toFixed(2) + 's');
+                mark.item.classList.add('is-arriving');
+                mark.timer = window.setTimeout(function () {
+                    mark.busy = false;
+                    mark.item.classList.remove('is-arriving');
+                    if (mark.pending) {
+                        mark.pending = false;
+                        var box = mark.item.getBoundingClientRect();
+                        if (box.bottom > 0 && box.top < window.innerHeight) { arrive(mark, 0); }
+                    }
+                }, (delay + 2) * 1000);
+            }
+
+            function emitSpark(now) {
+                if (!canSpark || now - lastSpark < 70) { return; }
+                lastSpark = now;
+                var spark = sparks[sparkIdx++ % sparks.length];
+                if (spark._anim) { spark._anim.cancel(); }
+                var dx = (Math.random() - 0.5) * 34;
+                var dy = (Math.random() - 0.3) * 22;
+                spark.style.top = current.toFixed(1) + 'px';
+                spark._anim = spark.animate([
+                    { transform: 'translate(0, 0) scale(1)', opacity: 0 },
+                    { transform: 'translate(' + (dx * 0.4).toFixed(1) + 'px, ' + (dy * 0.4).toFixed(1) + 'px) scale(1)', opacity: 0.9, offset: 0.2 },
+                    { transform: 'translate(' + dx.toFixed(1) + 'px, ' + dy.toFixed(1) + 'px) scale(0.2)', opacity: 0 }
+                ], { duration: 700 + Math.random() * 300, easing: 'ease-out' });
+            }
+
+            function render(now, moved) {
+                trailEl.style.setProperty('--trail-r', height ? (current / height).toFixed(4) : '0');
+                trailEl.style.setProperty('--trail-y', current.toFixed(1) + 'px');
+                headEl.classList.toggle('is-hidden', current <= 0.5 || current >= height - 0.5);
+
+                var reached = [];
+                var revisited = [];
+                marks.forEach(function (mark) {
+                    if (!mark.lit && current >= mark.y) {
+                        mark.lit = true;
+                        mark.item.classList.add('is-lit');
+                        if (!silent) { reached.push(mark); }
+                    } else if (mark.lit && current < mark.y - UNLIGHT_GAP) {
+                        // The trail has met this event again on its way back up.
+                        mark.lit = false;
+                        mark.item.classList.remove('is-lit');
+                        if (!silent) { revisited.push(mark); }
+                    }
+                });
+                // Events passed in one jump get their moments one after another,
+                // in the order the trail meets them (bottom to top when going up).
+                reached.forEach(function (mark, i) { arrive(mark, Math.min(i, 4) * 0.14); });
+                revisited.reverse().forEach(function (mark, i) { arrive(mark, Math.min(i, 4) * 0.14); });
+
+                if (moved && !silent && current > 0.5 && current < height - 0.5) { emitSpark(now); }
+            }
+
+            function frame(now) {
+                rafId = 0;
+                var diff = goal - current;
+                var before = current;
+                current = (reduceMotion || Math.abs(diff) < 0.4) ? goal : current + diff * 0.16;
+                render(now, Math.abs(current - before) > 0.3);
+                if (current !== goal) { rafId = window.requestAnimationFrame(frame); }
+            }
+
+            function onScroll() {
+                goal = target();
+                if (!rafId) { rafId = window.requestAnimationFrame(frame); }
+            }
+
+            // Re-measure and jump straight to the right place, without playing arrivals.
+            function resync() {
+                syncId = 0;
+                marks.forEach(function (mark) {
+                    window.clearTimeout(mark.timer);
+                    mark.busy = mark.pending = false;
+                    mark.item.classList.remove('is-lit', 'is-arriving');
+                });
+                measure();
+                silent = true;
+                goal = current = target();
+                render(0, false);
+                silent = false;
+            }
+
+            function queueResync() {
+                if (!syncId) { syncId = window.requestAnimationFrame(resync); }
+            }
+
+            function start() {
+                if (running) { return; }
+                running = true;
+                build();
+                resync();
+                window.addEventListener('scroll', onScroll, { passive: true });
+                window.addEventListener('resize', queueResync);
+                window.addEventListener('load', queueResync);
+                if ('ResizeObserver' in window) {
+                    ro = new ResizeObserver(queueResync);
+                    ro.observe(timeline);
+                }
+            }
+
+            function stop() {
+                if (!running) { return; }
+                running = false;
+                window.removeEventListener('scroll', onScroll);
+                window.removeEventListener('resize', queueResync);
+                window.removeEventListener('load', queueResync);
+                if (ro) { ro.disconnect(); ro = null; }
+                window.cancelAnimationFrame(rafId);
+                window.cancelAnimationFrame(syncId);
+                rafId = syncId = 0;
+                marks.forEach(function (mark) {
+                    window.clearTimeout(mark.timer);
+                    mark.item.classList.remove('is-lit', 'is-arriving');
+                });
+                sparks.forEach(function (spark) { if (spark._anim) { spark._anim.cancel(); } });
+                if (trailEl && trailEl.parentNode) { trailEl.parentNode.removeChild(trailEl); }
+            }
+
+            start();
+            window.addEventListener('pagehide', stop);
+            window.addEventListener('pageshow', function (event) { if (event.persisted) { start(); } });
+        })();
+    }
 })();

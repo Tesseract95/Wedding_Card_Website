@@ -915,6 +915,7 @@ html:not(.has-intro) .intro { display: none; }
     grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
     margin-top: 1.6rem;
+    text-align: center;
 }
 .rituals > div {
     padding: 1rem 0.8rem;
@@ -931,6 +932,93 @@ html:not(.has-intro) .intro { display: none; }
     color: var(--marigold-dark);
 }
 .rituals dd { margin-top: 0.3rem; font-family: var(--font-caps); font-size: 1rem; font-weight: 600; color: var(--red); }
+
+/* ----- Golden trail: a fine light that travels the line as the page scrolls.
+   Elements are added by script.js; without it the timeline is unchanged. ---- */
+.timeline__trail {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    translate: -50% 0;
+    pointer-events: none;
+}
+.timeline__trail-glow {
+    position: absolute;
+    inset: 0;
+    border-radius: 2px;
+    transform-origin: top;
+    transform: scaleY(var(--trail-r, 0));
+    background: linear-gradient(180deg, rgba(255, 200, 87, 0) 0%, var(--gold) 14%, #FFE9B0 100%);
+    box-shadow: 0 0 6px rgba(255, 200, 87, 0.55);
+}
+.timeline__trail-head {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    transform: translateY(var(--trail-y, 0px));
+    background: radial-gradient(circle, #FFF6D6 0 16%, rgba(255, 200, 87, 0.8) 32%, rgba(255, 200, 87, 0) 70%);
+    opacity: 1;
+    transition: opacity 0.4s;
+}
+.timeline__trail-head.is-hidden { opacity: 0; }
+.timeline__trail-head::before,
+.timeline__trail-head::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    background: linear-gradient(90deg, transparent, #FFF6D6, transparent);
+    translate: -50% -50%;
+}
+.timeline__trail-head::before { width: 16px; height: 1px; }
+.timeline__trail-head::after  { width: 1px; height: 16px; background: linear-gradient(180deg, transparent, #FFF6D6, transparent); }
+.timeline__spark {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 3px;
+    height: 3px;
+    margin: -1.5px 0 0 -1.5px;
+    border-radius: 50%;
+    background: #FFE9B0;
+    box-shadow: 0 0 4px 1px rgba(255, 200, 87, 0.8);
+    opacity: 0;
+}
+
+/* Arrival: the badge brightens and two fine rings expand from its centre */
+.timeline__date { position: relative; }
+.timeline__date::before,
+.timeline__date::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 200, 87, 0.9);
+    box-shadow: 0 0 10px rgba(255, 200, 87, 0.45);
+    opacity: 0;
+    pointer-events: none;
+}
+.timeline__date::after { border-color: rgba(255, 200, 87, 0.55); box-shadow: none; }
+.timeline__item { --ring-scale: 2.3; }
+.timeline__item.is-arriving .timeline__date { animation: dateLight 1.4s ease-out var(--arrive-delay, 0s) both; }
+.timeline__item--main.is-arriving .timeline__date { animation: glow 3s ease-in-out infinite, dateLight 1.4s ease-out var(--arrive-delay, 0s) both; }
+.timeline__item.is-arriving .timeline__date::before { animation: ringOut 1.5s var(--ease-out) var(--arrive-delay, 0s) both; }
+.timeline__item.is-arriving .timeline__date::after  { animation: ringOut 1.5s var(--ease-out) calc(var(--arrive-delay, 0s) + 0.28s) both; }
+@keyframes ringOut {
+    0%   { transform: scale(1.2); opacity: 0; }
+    14%  { opacity: 0.9; }
+    100% { transform: scale(var(--ring-scale)); opacity: 0; }
+}
+@keyframes dateLight {
+    0%   { filter: none; }
+    30%  { filter: brightness(1.16) drop-shadow(0 0 10px rgba(255, 200, 87, 0.7)); }
+    100% { filter: none; }
+}
 
 /* ==========================================================================
    VENUES
@@ -1064,7 +1152,7 @@ html:not(.has-intro) .intro { display: none; }
     .couple__knot { order: 2; padding: 0.4rem 0; }
     .person--bride { order: 3; }
 
-    .timeline::before { left: 48px; translate: 0; }
+    .timeline::before, .timeline__trail { left: 48px; translate: 0; }
     .timeline__item { grid-template-columns: 96px minmax(0, 1fr); column-gap: 1.2rem; }
     .timeline__date { grid-column: 1; grid-row: 1; width: 84px; height: 84px; justify-self: start; margin-left: 6px; }
     .timeline__day { font-size: 1.7rem; }
@@ -1075,11 +1163,12 @@ html:not(.has-intro) .intro { display: none; }
 
     .timeline__item--main { grid-template-columns: 96px minmax(0, 1fr); justify-items: start; gap: 0 1.2rem; }
     .timeline__item--main .timeline__date { grid-column: 1; width: 84px; height: 84px; }
+    .timeline__item { --ring-scale: 1.8; }
     .timeline__item--main .timeline__day { font-size: 1.9rem; }
     .timeline__item--main .timeline__card { grid-column: 2; width: 100%; text-align: left; padding: 1.6rem 1.4rem; }
     .rituals { grid-template-columns: minmax(0, 1fr); gap: 0.6rem; }
-    .rituals > div { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 1rem; padding: 0.8rem 1rem; }
-    .rituals dd { margin-top: 0; margin-left: auto; text-align: right; }
+    .rituals > div { padding: 0.8rem 1rem; }
+    .rituals dd { overflow-wrap: anywhere; }
 }
 
 @media (max-width: 600px) {
@@ -1103,15 +1192,22 @@ html:not(.has-intro) .intro { display: none; }
     .letter { padding: 1.8rem 1.4rem 2rem; }
     .person { padding: 3rem 1.2rem 2rem; }
 
-    .timeline::before { left: 36px; }
+    .timeline::before, .timeline__trail { left: 36px; }
     .timeline__item, .timeline__item--main { grid-template-columns: 72px minmax(0, 1fr); column-gap: 0.9rem; }
     .timeline__date, .timeline__item--main .timeline__date { width: 64px; height: 64px; margin-left: 4px; box-shadow: 0 0 0 6px var(--red-deep), 0 0 0 7px var(--line-on-dark); }
     .timeline__day, .timeline__item--main .timeline__day { font-size: 1.35rem; }
     .timeline__month { font-size: 0.58rem; }
     .timeline__card { padding: 1.3rem 1.2rem; }
+    .timeline__item { --ring-scale: 1.6; }
 
     .venue__body { padding: 1.5rem 1.3rem 1.7rem; }
     .contact__actions .btn { flex: 1; }
+}
+
+@media (max-width: 360px) {
+    /* Keep the longest ritual name ("Devaganasana") inside its row */
+    .timeline__item--main .timeline__card { padding-inline: 0.9rem; }
+    .rituals > div { padding-inline: 0.4rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1119,6 +1215,12 @@ html:not(.has-intro) .intro { display: none; }
     .corner-art { animation: none; }
     .petals { display: none; }
     .reveal { opacity: 1; transform: none; }
+    .timeline__trail-head, .timeline__spark { display: none; }
+    .timeline__item.is-arriving .timeline__date,
+    .timeline__item.is-arriving .timeline__date::before,
+    .timeline__item.is-arriving .timeline__date::after { animation: none; }
+    .timeline__item--main.is-arriving .timeline__date { animation: glow 3s ease-in-out infinite; }
+    .timeline__item.is-lit .timeline__date::before { opacity: 0.6; transform: scale(1.2); }
 }
 
 @media print {
