@@ -806,6 +806,9 @@ html:not(.has-intro) .intro { display: none; }
 .timeline {
     position: relative;
     display: grid;
+    /* minmax(0, 1fr) stops the widest item (the wedding-day rituals) from
+       stretching the implicit auto column past the viewport on mobile. */
+    grid-template-columns: minmax(0, 1fr);
     gap: 2.2rem;
     padding-left: 0;
 }
@@ -1062,7 +1065,7 @@ html:not(.has-intro) .intro { display: none; }
     .person--bride { order: 3; }
 
     .timeline::before { left: 48px; translate: 0; }
-    .timeline__item { grid-template-columns: 96px 1fr; column-gap: 1.2rem; }
+    .timeline__item { grid-template-columns: 96px minmax(0, 1fr); column-gap: 1.2rem; }
     .timeline__date { grid-column: 1; grid-row: 1; width: 84px; height: 84px; justify-self: start; margin-left: 6px; }
     .timeline__day { font-size: 1.7rem; }
     .timeline__item:nth-child(odd) .timeline__card,
@@ -1070,13 +1073,13 @@ html:not(.has-intro) .intro { display: none; }
     .timeline__item:nth-child(odd) .timeline__card::before,
     .timeline__item:nth-child(even) .timeline__card::before { left: -8px; right: auto; }
 
-    .timeline__item--main { grid-template-columns: 96px 1fr; justify-items: start; gap: 0 1.2rem; }
+    .timeline__item--main { grid-template-columns: 96px minmax(0, 1fr); justify-items: start; gap: 0 1.2rem; }
     .timeline__item--main .timeline__date { grid-column: 1; width: 84px; height: 84px; }
     .timeline__item--main .timeline__day { font-size: 1.9rem; }
     .timeline__item--main .timeline__card { grid-column: 2; width: 100%; text-align: left; padding: 1.6rem 1.4rem; }
-    .rituals { grid-template-columns: 1fr; gap: 0.6rem; }
-    .rituals > div { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding: 0.8rem 1rem; }
-    .rituals dd { margin-top: 0; text-align: right; }
+    .rituals { grid-template-columns: minmax(0, 1fr); gap: 0.6rem; }
+    .rituals > div { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 1rem; padding: 0.8rem 1rem; }
+    .rituals dd { margin-top: 0; margin-left: auto; text-align: right; }
 }
 
 @media (max-width: 600px) {
@@ -1101,7 +1104,7 @@ html:not(.has-intro) .intro { display: none; }
     .person { padding: 3rem 1.2rem 2rem; }
 
     .timeline::before { left: 36px; }
-    .timeline__item, .timeline__item--main { grid-template-columns: 72px 1fr; column-gap: 0.9rem; }
+    .timeline__item, .timeline__item--main { grid-template-columns: 72px minmax(0, 1fr); column-gap: 0.9rem; }
     .timeline__date, .timeline__item--main .timeline__date { width: 64px; height: 64px; margin-left: 4px; box-shadow: 0 0 0 6px var(--red-deep), 0 0 0 7px var(--line-on-dark); }
     .timeline__day, .timeline__item--main .timeline__day { font-size: 1.35rem; }
     .timeline__month { font-size: 0.58rem; }
