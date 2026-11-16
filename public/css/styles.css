@@ -563,6 +563,42 @@ html:not(.has-intro) .intro { display: none; }
 .rsvp .corner-art { width: clamp(84px, 12vw, 170px); opacity: 0.95; }
 .rsvp .wrap { position: relative; z-index: 2; }
 
+/* ----- Corner artwork ----------------------------------------------------
+   Opening frame: kalash and brass lamp, one drawing mirrored for the left corner.
+   Closing frame: baraat procession as a full-width band along the bottom.
+   Heights come from --ah so both corners always match, and the frame reserves
+   room underneath its content so the artwork never covers text or buttons. */
+.hero { --ah: min(calc(clamp(190px, calc(115px + 20vw), 470px) * 0.74), 40vw); }
+
+.art {
+    position: absolute;
+    bottom: 0;
+    z-index: 1;
+    height: var(--ah);
+    margin: 0;
+    pointer-events: none;
+    filter: drop-shadow(0 12px 16px rgba(70, 5, 5, 0.38));
+}
+.art img { display: block; height: 100%; width: auto; max-width: none; }
+.art--left  { left: clamp(0.2rem, 1.5vw, 2rem); }
+.art--left img { transform: scaleX(-1); }
+.art--right { right: clamp(0.2rem, 1.5vw, 2rem); }
+.hero .art  { animation: fadeUp 1s var(--ease-out) 1.9s both; }
+
+.art-band {
+    --bw: min(96vw, 1100px);
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    z-index: 1;
+    width: var(--bw);
+    margin: 0;
+    translate: -50% 0;
+    pointer-events: none;
+    filter: drop-shadow(0 10px 14px rgba(70, 5, 5, 0.32));
+}
+.art-band img { display: block; width: 100%; height: auto; }
+
 /* ==========================================================================
    BLESSING
    ========================================================================== */
@@ -771,9 +807,7 @@ html:not(.has-intro) .intro { display: none; }
     place-items: center;
     color: var(--gold);
 }
-.couple__knot svg { width: 110px; height: 110px; filter: drop-shadow(0 0 22px rgba(255, 200, 87, 0.55)); }
 .couple__weds {
-    margin-top: -0.4rem;
     font-family: var(--font-script);
     font-size: 2.2rem;
     line-height: 1;
@@ -1071,7 +1105,8 @@ html:not(.has-intro) .intro { display: none; }
    ========================================================================== */
 .rsvp {
     position: relative;
-    padding: var(--section-y) 0;
+    /* bottom padding reserves room for the baraat band (.art-band): its height plus a gap */
+    padding: var(--section-y) 0 calc(min(96vw, 1100px) * 0.31 + 2.2rem);
     text-align: center;
     color: var(--cream);
     background:
@@ -1147,6 +1182,16 @@ html:not(.has-intro) .intro { display: none; }
 /* ==========================================================================
    RESPONSIVE
    ========================================================================== */
+@media (min-width: 601px) and (max-width: 1000px) {
+    /* room under the hero buttons for the corner artwork */
+    .hero { padding-bottom: calc(var(--ah) + 1.6rem); }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+    /* short landscape phones: keep the corner artwork in proportion to the screen */
+    .hero { --ah: clamp(120px, 34vh, 190px); }
+}
+
 @media (max-width: 860px) {
     .couple { grid-template-columns: 1fr; }
     .couple__knot { order: 2; padding: 0.4rem 0; }
@@ -1178,9 +1223,8 @@ html:not(.has-intro) .intro { display: none; }
     .nav__brand { font-size: 1.5rem; }
     .nav__links a { padding: 0.35rem 0.4rem; font-size: 0.62rem; letter-spacing: 0.1em; }
 
-    .hero { padding: 5.5rem var(--pad-x) 9rem; }
+    .hero { padding: 5.5rem var(--pad-x) calc(var(--ah) + 1.6rem); }
     .corner-art { width: 92px; }
-    .rsvp { padding-bottom: calc(var(--section-y) + 5rem); }
     .hero__eyebrow { font-size: 0.68rem; letter-spacing: 0.3em; gap: 0.6rem; }
     .hero__eyebrow-line { width: 28px; }
     .hero__when { flex-direction: column; gap: 0.3rem; padding: 0.9rem 1.6rem; border-radius: 22px; }
@@ -1224,7 +1268,7 @@ html:not(.has-intro) .intro { display: none; }
 }
 
 @media print {
-    .intro, .nav, .petals, .mandala, .hero__scroll, .countdown, .hero__actions, .venue__map, .corner-art { display: none !important; }
+    .intro, .nav, .petals, .mandala, .hero__scroll, .countdown, .hero__actions, .venue__map, .corner-art, .art, .art-band { display: none !important; }
     .reveal { opacity: 1 !important; transform: none !important; }
     body { background: #fff; }
 }

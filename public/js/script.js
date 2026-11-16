@@ -1,5 +1,5 @@
 /* Swastik & Soumya · Wedding Website
-   1. Intro screen that opens the site.
+   1. Intro screen that opens the site, and the background music (see 'Music').
    2. Sticky nav: solid on scroll, highlights the current section.
    3. Sections and cards reveal as the guest scrolls.
    4. Falling marigold petals in the hero.
@@ -23,6 +23,115 @@
     var intro = document.getElementById('intro');
     var weddingSong = document.getElementById('wedding-song');
 
+    /* ------------------------------------------------------------------
+       Music
+       One <audio> element (in index.html) serves the whole site. It is part of
+       the page from the first moment, preloads while the intro is showing, and
+       lives outside the intro and every section, so it is never recreated or
+       restarted as the visitor moves around (links only scroll one page).
+
+       When it starts:
+       1. The moment this script runs, playback is attempted. Browsers that
+          allow autoplay with sound start the song right there.
+       2. Otherwise the song starts INSIDE the "Tap to enter" tap itself: the
+          intro's own click handler (below) calls startMusic() directly, so the
+          play() request happens within the visitor's gesture.
+       3. Visitors with no intro tap (a link such as #venue, or Esc closing the
+          intro) start it with their first tap, click or key press instead.
+       Nothing here works around the browser's autoplay rules.
+       ------------------------------------------------------------------ */
+    // true: if the browser blocks autoplay, the intro stays up until the visitor
+    // taps, because that tap is what starts the music. false: the intro
+    // always opens by itself after a few seconds, as before.
+    var WAIT_FOR_TAP_WHEN_MUSIC_BLOCKED = true;
+
+    var musicRequested = false;   // a play() call is in flight
+    var musicBlocked = false;     // the browser is holding playback until a gesture
+    var musicFailed = false;      // the file cannot be played at all
+    var musicArmed = false;       // fallback gesture listeners are attached
+    // Fallback gestures for when there is no intro tap to use. (pointerup is left
+    // out on purpose: touch taps already end in touchend and click.)
+    var musicGestures = ['touchend', 'click', 'keydown'];
+
+    function introIsShowing() {
+        return !!(intro && intro.parentNode && !intro.classList.contains('is-done') &&
+                  html.classList.contains('has-intro'));
+    }
+
+    function armMusicGestures() {
+        if (musicArmed) { return; }
+        musicArmed = true;
+        musicGestures.forEach(function (name) {
+            document.addEventListener(name, startMusic, { capture: true, passive: true });
+        });
+    }
+
+    function disarmMusicGestures() {
+        if (!musicArmed) { return; }
+        musicArmed = false;
+        musicGestures.forEach(function (name) {
+            document.removeEventListener(name, startMusic, true);
+        });
+    }
+
+    function startMusic() {
+        if (!weddingSong || musicFailed) { return; }
+        // Already playing, or a start is already in flight: never start a second time.
+        if (!weddingSong.paused || musicRequested) { return; }
+        musicRequested = true;
+        var attempt;
+        try { attempt = weddingSong.play(); } catch (err) { attempt = null; console.log('Music: play() threw', err); }
+        if (attempt && typeof attempt.then === 'function') {
+            attempt.then(function () {
+                musicRequested = false;
+                musicBlocked = false;
+            }, function (error) {
+                musicRequested = false;
+                console.log('Music: play() was rejected:', (error && error.name) + (error && error.message ? ' - ' + error.message : ''));
+                if (error && error.name === 'NotSupportedError') {
+                    // No playable source: stop trying, and never hold the intro for it.
+                    musicFailed = true;
+                    disarmMusicGestures();
+                    return;
+                }
+                // Autoplay blocked (or the attempt was interrupted). While the intro is
+                // showing, its own tap is the trigger; otherwise listen for the next gesture.
+                musicBlocked = true;
+                if (!introIsShowing()) { armMusicGestures(); }
+            });
+        }
+    }
+
+    if (weddingSong) {
+        weddingSong.loop = true;
+        weddingSong.preload = 'auto';   // ready to play before the first tap
+        // Playback really started: the fallback gestures are no longer needed.
+        weddingSong.addEventListener('playing', function () {
+            musicBlocked = false;
+            disarmMusicGestures();
+        });
+        // Something other than the visitor paused it (call, app switch, system):
+        // resume at the next gesture. A future pause button should set
+        // data-user-paused on the audio element so this leaves it alone.
+        weddingSong.addEventListener('pause', function () {
+            if (!weddingSong.ended && !musicFailed && !weddingSong.hasAttribute('data-user-paused')) {
+                armMusicGestures();
+            }
+        });
+        // A broken or missing file: say so once and stop waiting on it.
+        // (Errors on <source> do not bubble, so listen in the capture phase.)
+        weddingSong.addEventListener('error', function () {
+            musicFailed = true;
+            disarmMusicGestures();
+            console.log('Music: the audio file could not be loaded:', weddingSong.currentSrc || '/wedding_song.mp3');
+        }, true);
+        // Coming back to the tab or app: pick the music up again if the system stopped it.
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden && weddingSong.paused && !weddingSong.hasAttribute('data-user-paused')) { startMusic(); }
+        });
+        startMusic();   // earliest possible attempt, before the intro is touched
+    }
+
     function finishIntro() {
         html.classList.remove('has-intro');
         if (intro && intro.parentNode) {
@@ -37,30 +146,39 @@
 
     function closeIntro() {
         if (!intro || intro.classList.contains('is-done')) { return; }
-        
-        // Play the wedding song when intro is closed
-        if (weddingSong) {
-            weddingSong.play().catch(function(error) {
-                console.log('Audio playback failed:', error);
-            });
+        if (reduceMotion) { finishIntro(); } else {
+            intro.classList.add('is-done');
+            window.setTimeout(finishIntro, 1200);
         }
-        
-        if (reduceMotion) { finishIntro(); return; }
-        intro.classList.add('is-done');
-        window.setTimeout(finishIntro, 1200);
+        // The intro is going away without having started the music (Esc, or the
+        // browser blocked it): let the visitor's next gesture start it.
+        if (musicBlocked) { armMusicGestures(); }
+    }
+
+    // "Tap to enter": the tap starts the music (inside the gesture) and opens the site.
+    function onIntroTap() {
+        startMusic();
+        closeIntro();
     }
 
     if (intro && html.classList.contains('has-intro')) {
         window.scrollTo(0, 0);
-        intro.addEventListener('click', closeIntro);
+        intro.addEventListener('click', onIntroTap);
         document.addEventListener('keydown', function onKey(event) {
-            if (event.key === 'Enter' || event.key === ' ' || event.key === 'Escape') {
-                closeIntro();
+            if (event.key === 'Enter' || event.key === ' ') {
+                onIntroTap();                       // a key press is a gesture too
+                document.removeEventListener('keydown', onKey);
+            } else if (event.key === 'Escape') {
+                closeIntro();                       // Esc is not a gesture: music waits for the next tap
                 document.removeEventListener('keydown', onKey);
             }
         });
-        // Opens by itself after a few seconds so nobody is left waiting.
-        window.setTimeout(closeIntro, 4200);
+        // Opens by itself after a few seconds so nobody is left waiting, unless the
+        // browser is holding the music back: then the visitor's tap is what starts it.
+        window.setTimeout(function () {
+            if (WAIT_FOR_TAP_WHEN_MUSIC_BLOCKED && musicBlocked && !musicFailed) { return; }
+            closeIntro();
+        }, 4200);
     } else if (intro) {
         finishIntro();
     }
