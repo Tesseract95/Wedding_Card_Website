@@ -16,15 +16,24 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Great+Vibes&family=Poppins:wght@400;500;600&family=Noto+Serif+Devanagari:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
-    <!-- Runs before first paint: the intro screen shows once, unless the
-         visitor arrived via a deep link such as #venue. -->
+    <!-- Runs before first paint: every load, refresh and hard refresh starts at the
+         opening (Ganesha) screen, at the top of the page.
+         - The browser would otherwise put the visitor back where they were
+           (scroll restoration), so that is switched off for this page.
+         - The menu links leave a section anchor such as #venue in the address
+           bar; on a refresh that anchor would skip the opening screen and jump
+           to the section, so it is dropped here. -->
     <script>
         (function () {
             var html = document.documentElement;
             html.classList.add('js');
-            if (!window.location.hash) {
-                html.classList.add('has-intro');
-            }
+            html.classList.add('has-intro');
+            try {
+                if ('scrollRestoration' in history) { history.scrollRestoration = 'manual'; }
+                if (window.location.hash) {
+                    history.replaceState(history.state, '', window.location.pathname + window.location.search);
+                }
+            } catch (err) { /* a browser that blocks this: the intro still shows */ }
         })();
     </script>
 </head>

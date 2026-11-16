@@ -17,7 +17,10 @@
       Safari/iOS), the first real press, TAP or key press starts it. Only these count:
         - a mouse press, a finger TAP (finger down and up in place), a key press (not Esc), a click.
       Scrolling, swiping and mouse-wheel never start or restart the music.
-   The "Tap to enter" screen has nothing to do with the music.
+   The invitation opens only when the guest taps "Tap to enter" (script.js). That tap is the first
+   gesture, so on a device that blocks sound it is the moment the music begins (rising over 1.8 s
+   as the invitation opens); where the browser already allows sound, the music is playing before the
+   tap and the tap does not touch it. script.js contains no music code.
 
    STOP
    - While the page is hidden (another tab, another app, screen off) the music is silenced and the
@@ -38,6 +41,7 @@
     var VOLUME = 1;            // unchanged from the original player (full level of the recording)
     var RAMP_DOWN = 0.2;       // seconds to fade out before pausing (avoids a click)
     var RAMP_UP = 0.25;        // seconds to fade back in after a pause / returning to the tab
+    var FADE_IN = 1.8;         // seconds for the song's first start to rise from nothing to full level (a soft entrance, like an opening bar)
 
     var debug = /[?&#]musicdebug/.test(location.search + location.hash);
     function log(message) {
@@ -101,14 +105,19 @@
         if (mode === 'element') { elementSync(); return; }
         if (userOff || document.hidden || !buffer || !ctx || ctx.state !== 'running') { return; }
         if (!source) {
+            // The song's very first start: it begins at the start of the track and rises to full level
+            // over FADE_IN seconds. (This is the song entering, not a muted track being unmuted.)
+            var now = ctx.currentTime;
+            master.gain.cancelScheduledValues(now);
+            master.gain.setValueAtTime(0, now);
+            master.gain.linearRampToValueAtTime(VOLUME, now + FADE_IN);
             source = ctx.createBufferSource();
             source.buffer = buffer;
             source.loop = true;
             source.connect(master);
             source.start(0);
-            log('source started (single looping source)');
-        }
-        if (master.gain.value < VOLUME) { ramp(VOLUME, RAMP_UP); }
+            log('source started (single looping source, ' + FADE_IN + 's fade-in)');
+        } else if (master.gain.value < VOLUME) { ramp(VOLUME, RAMP_UP); }
         setPlaying(true);
     }
 

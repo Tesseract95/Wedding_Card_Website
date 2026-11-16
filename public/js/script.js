@@ -42,7 +42,8 @@
     }
 
     if (intro && html.classList.contains('has-intro')) {
-        window.scrollTo(0, 0);
+        // Instant, not smooth: the page's CSS smooth-scrolls, which would visibly animate this reset.
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
         intro.addEventListener('click', closeIntro);
         document.addEventListener('keydown', function onKey(event) {
             if (event.key === 'Enter' || event.key === ' ' || event.key === 'Escape') {
@@ -50,8 +51,8 @@
                 document.removeEventListener('keydown', onKey);
             }
         });
-        // Opens by itself after a few seconds so nobody is left waiting.
-        window.setTimeout(closeIntro, 4200);
+        // The invitation opens only when the guest taps "Tap to enter" (or presses Enter / Space).
+        // That tap is also what lets the browser play the background music (see music.js).
     } else if (intro) {
         finishIntro();
     }
