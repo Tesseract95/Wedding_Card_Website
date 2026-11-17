@@ -59,6 +59,10 @@ html {
     font-size: 112.5%;
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
+    /* The root has no transitions of its own. This matters under "reduced motion", whose rule gives every element a 0.01ms
+       transition: the intro's reserved scrollbar width (html.has-intro below) would then be released one frame after the
+       scrollbar appears, and the page would jump for that frame. */
+    transition-property: none;
 }
 
 body {
@@ -73,6 +77,11 @@ body {
 }
 
 html.has-intro, html.has-intro body { overflow: hidden; height: 100%; }
+/* While the page is locked its scrollbar is hidden. Reserve the width it takes once unlocked (measured in script.js, 0 for overlay
+   scrollbars) so the layout is identical before and after, and nothing shifts when the intro ends. The fixed nav bar is anchored to
+   the window edge rather than the page, so it needs the same allowance. */
+html.has-intro { padding-right: var(--scrollbar-width, 0px); }
+html.has-intro .nav { right: var(--scrollbar-width, 0px); }
 
 img, svg { display: block; max-width: 100%; }
 p { margin: 0; }

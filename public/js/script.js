@@ -24,6 +24,8 @@
 
     function finishIntro() {
         html.classList.remove('has-intro');
+        window.removeEventListener('resize', reserveScrollbarWidth);
+        html.style.removeProperty('--scrollbar-width');
         if (intro && intro.parentNode) {
             intro.parentNode.removeChild(intro);
         }
@@ -34,14 +36,43 @@
         }
     }
 
+    // The Home page's entrance animations (content rising into place, "fadeUp") start when the page loads, behind the intro. Whoever
+    // taps early would see them still running as the intro fades: the page appearing to creep upwards. So when the intro is dismissed
+    // they are completed at once, while the intro still fully covers the page, and the Home page is revealed already in place.
+    function settleHomePage() {
+        if (!document.getAnimations) { return; }
+        document.getAnimations().forEach(function (animation) {
+            var target = animation.effect && animation.effect.target;
+            if (animation.animationName === 'fadeUp' && target && target.closest && target.closest('.hero')) {
+                try { animation.finish(); } catch (err) { /* not finishable: leave it */ }
+            }
+        });
+    }
+
     function closeIntro() {
         if (!intro || intro.classList.contains('is-done')) { return; }
+        settleHomePage();
         if (reduceMotion) { finishIntro(); return; }
         intro.classList.add('is-done');
         window.setTimeout(finishIntro, 1200);
     }
 
+    // While the intro shows, the page is locked and its scrollbar is hidden; when the intro ends the scrollbar appears and
+    // takes its width (about 15px with a mouse on Windows) from the page, so everything would jump sideways at that moment.
+    // So the width it will take is measured here and reserved behind the intro (see html.has-intro in styles.css): the page
+    // is then already in its final position when the intro fades. Overlay scrollbars (phones, Macs) measure 0: nothing to do.
+    function reserveScrollbarWidth() {
+        var probe = document.createElement('div');
+        probe.style.cssText = 'position:absolute;top:-100px;width:100px;height:100px;overflow:scroll;visibility:hidden';
+        document.body.appendChild(probe);
+        var width = probe.offsetWidth - probe.clientWidth;
+        document.body.removeChild(probe);
+        html.style.setProperty('--scrollbar-width', width + 'px');
+    }
+
     if (intro && html.classList.contains('has-intro')) {
+        reserveScrollbarWidth();
+        window.addEventListener('resize', reserveScrollbarWidth);   // browser zoom changes the width in CSS pixels
         // Instant, not smooth: the page's CSS smooth-scrolls, which would visibly animate this reset.
         window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
         intro.addEventListener('click', closeIntro);
